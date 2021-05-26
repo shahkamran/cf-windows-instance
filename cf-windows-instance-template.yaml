@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  This template deploys Windows EC2 Instance in existing VPC and network using predefined parameters below.
+Metadata:
+  Comment: 'Last CFT modification date: 26/05/2021'
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Server Information
+        Description:
+          default: ''
+        Parameters:
+          - HostName
+          - ChosenIPAddress
+      - Label:
+          default: Network Information
+        Description:
+          default: ''
+        Parameters:
+          - ExistingVPC
+          - ExistingSubnet
+          - ExistingSecurityGroup
+      - Label:
+          default: Instance Type
+        Description:
+          default: ''
+        Parameters:
+          - InstanceType
+      - Label:
+          default: Access Information
+        Description:
+          default: ''
+        Parameters:
+          - KeyName
+      - Label:
+          default: AMI
+        Description:
+          default: ''
+        Parameters:
+          - AMI
+    ParameterLabels:
+      ExistingVPC:
+        default: VPC
+      ExistingSubnet:
+        default: Subnet
+      ExistingSecurityGroup:
+        default: SecurityGroup
+      InstanceType:
+        default: EC2 type
+      AMI:
+        default: AMI Name
+      KeyName:
+        default: Key Pair
+      ChosenIPAddress:
+        default: IP Address
+Parameters:
+  ExistingVPC:
+    Description: VPC ID
+    Type: 'AWS::EC2::VPC::Id'
+    Default: 'vpc-*'  # You can add preferred value to speed up default selection.
+  ExistingSubnet:
+    Description: 'Select the Subnet ID belongs to the VPC Selected above, otherwise deployment will fail.'
+    Type: 'AWS::EC2::Subnet::Id'
+    Default: 'subnet-*' # You can add preferred value to speed up default selection.
+  ExistingSecurityGroup:
+    Description: 'Select the Security Group belongs to the VPC Selected above, otherwise deployment will fail.'
+    Type: 'AWS::EC2::SecurityGroup::Id'
+    Default: 'sg-*' # You can add preferred value to speed up default selection.
+  InstanceType:
+    Type: String
+    Default: t2.micro # You can add preferred value to speed up default selection.
+    AllowedValues:
+      - t3a.medium
+      - t2.micro
+      - m1.small
+      - m1.large
+    Description: Select required instance size for list below. Default is t2micro.
+  AMI:
+    Type: String
+    Default: ami-09b00616b12b077f8 # You can add preferred value to speed up default selection.
+    AllowedValues:
+      - ami-09b00616b12b077f8
+      - ami-0b26d4c4eb5a326aa
+      - ami-0b1e9a5d29621f918
+    Description: The Windows AMI to use.
+  HostName:
+    Type: String
+    Default: server-host-name-1 - # You can add preferred value to speed up default selection.
+  KeyName:
+    Description: Name of an existing EC2 key pair for SSH access to the EC2 instances
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: '*' # You can add preferred value to speed up default selection.
+    MinLength: '1'
+    ConstraintDescription: Select the name of an existing EC2 key pair.
+  ChosenIPAddress:
+    Description: Select one of the available IP Addresses that is not already in use.
+    Type: String
+    Default: 10.0.1.12 # You can add preferred value to speed up default selection.
+    AllowedValues:
+      - 10.0.1.10
+      - 10.0.1.11
+      - 10.0.1.12
+      - 10.0.1.13
+      - 10.0.1.14
+      - 10.0.1.15
+      - 10.0.1.16
+      - 10.0.1.17
+      - 10.0.1.18
+      - 10.0.1.19
+      - 10.0.1.20
+
+Resources:
+
+  Windows:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      Comment: Installation Server
+      'AWS::CloudFormation::Init':
+        configSets:
+          default: []
+    Properties:
+      ImageId: !Ref AMI
+      InstanceType:
+        !Ref InstanceType
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref ExistingSecurityGroup
+          SubnetId: !Ref ExistingSubnet
+          PrivateIpAddress: !Ref ChosenIPAddress
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+        - DeviceName: /dev/sda2
+          Ebs:
+            VolumeSize: 10
+      UserData:
+        Fn::Base64: !Sub |
+          <powershell>
+          Write-Host "Hello World!"
+          </powershell>
+      Tags:
+        - Key: Name
+          Value:  !Ref HostName
+        - Key: Owner
+          Value: IPutMyNameOnIt
